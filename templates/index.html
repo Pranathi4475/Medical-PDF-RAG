@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Medical PDF Question Answering</title>
+
+</head>
+
+<body>
+
+    <h1>Medical PDF Question Answering</h1>
+
+
+    <!-- Upload PDF -->
+
+    {% if not pdf_uploaded %}
+
+        <h2>Upload Medical PDF</h2>
+
+        <form action="/upload" method="POST" enctype="multipart/form-data">
+
+            <input
+                type="file"
+                name="pdf"
+                accept=".pdf"
+                required
+            >
+
+            <button type="submit">
+                Upload PDF
+            </button>
+
+        </form>
+
+    {% else %}
+
+        <h2>Uploaded PDF</h2>
+
+        <p>
+            <strong>{{ pdf_name }}</strong>
+        </p>
+
+        <p>
+            PDF uploaded successfully. You can now ask multiple questions.
+        </p>
+
+    {% endif %}
+
+
+    {% if message %}
+
+        <p>
+            <strong>{{ message }}</strong>
+        </p>
+
+    {% endif %}
+
+
+    <hr>
+
+
+    <!-- Ask Question -->
+
+    {% if pdf_uploaded %}
+
+        <h2>Ask a Question</h2>
+
+        <form action="/ask" method="POST">
+
+            <input
+                type="text"
+                name="question"
+                placeholder="Ask your question..."
+                value="{{ question if question else '' }}"
+                required
+            >
+
+            <button type="submit">
+                Ask
+            </button>
+
+        </form>
+
+
+        <!-- Answer -->
+
+        {% if question %}
+
+            <hr>
+
+            <h3>Question:</h3>
+
+            <p>
+                {{ question }}
+            </p>
+
+
+            <h3>Answer:</h3>
+
+            <p style="white-space: pre-line;">
+                {{ answer }}
+            </p>
+
+
+            <!-- Sources -->
+
+            {% if source_pages %}
+
+                <h3>Source Pages:</h3>
+
+                <ul>
+
+                    {% for page in source_pages %}
+
+                        <li>
+                            Page {{ page }}
+                        </li>
+
+                    {% endfor %}
+
+                </ul>
+
+            {% endif %}
+
+
+            <br>
+
+            <form action="/" method="GET">
+
+                <button type="submit">
+                    New Question
+                </button>
+
+            </form>
+
+        {% endif %}
+
+    {% endif %}
+
+
+    <hr>
+
+
+    <!-- Disclaimer -->
+
+    <p>
+
+        <strong>Disclaimer:</strong>
+
+        This application provides information from the uploaded document
+        and is not a substitute for professional medical advice.
+
+    </p>
+
+</body>
+
+</html>
