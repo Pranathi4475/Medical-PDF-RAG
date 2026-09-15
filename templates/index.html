@@ -2,25 +2,193 @@
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Medical PDF Question Answering</title>
+    <title>Medical PDF AI Assistant</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f7fb;
+            color: #1f2937;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+
+        .header p {
+            color: #6b7280;
+            font-size: 16px;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        h2 {
+            margin-top: 0;
+            font-size: 20px;
+        }
+
+        input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+        }
+
+        input[type="text"] {
+            width: 75%;
+            padding: 13px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 15px;
+        }
+
+        button {
+            padding: 13px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            background: #2563eb;
+            color: white;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        .question {
+            background: #eff6ff;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .answer {
+            background: #f9fafb;
+            padding: 18px;
+            border-radius: 8px;
+            line-height: 1.6;
+        }
+
+        .retrieved {
+            background: #f3f4f6;
+            padding: 18px;
+            border-radius: 8px;
+            line-height: 1.6;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: normal;
+        }
+
+        .sources {
+            margin-top: 20px;
+        }
+
+        .sources span {
+            display: inline-block;
+            background: #e5e7eb;
+            padding: 7px 12px;
+            border-radius: 20px;
+            margin: 5px;
+            font-size: 14px;
+        }
+
+        .success {
+            background: #ecfdf5;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .disclaimer {
+            text-align: center;
+            color: #6b7280;
+            font-size: 13px;
+            margin-top: 30px;
+        }
+
+        @media (max-width: 600px) {
+
+            input[type="text"] {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+
+            button {
+                width: 100%;
+            }
+
+            .container {
+                margin: 20px auto;
+            }
+        }
+    </style>
 
 </head>
 
 <body>
 
-    <h1>Medical PDF Question Answering</h1>
+<div class="container">
+
+    <div class="header">
+
+        <h1>🩺 Medical PDF AI Assistant</h1>
+
+        <p>
+            Ask questions from your medical documents using
+            Retrieval-Augmented Generation (RAG).
+        </p>
+
+    </div>
+
+
+    {% if message %}
+
+    <div class="success">
+        <strong>{{ message }}</strong>
+    </div>
+
+    {% endif %}
 
 
     <!-- Upload PDF -->
 
     {% if not pdf_uploaded %}
 
-        <h2>Upload Medical PDF</h2>
+    <div class="card">
+
+        <h2>📄 Upload Medical PDF</h2>
+
+        <p>
+            Upload a medical textbook, guideline, or healthcare document.
+        </p>
 
         <form action="/upload" method="POST" enctype="multipart/form-data">
 
@@ -37,125 +205,169 @@
 
         </form>
 
+    </div>
+
     {% else %}
 
-        <h2>Uploaded PDF</h2>
+
+    <!-- Uploaded PDF -->
+
+    <div class="card">
+
+        <h2>📚 Current Document</h2>
 
         <p>
             <strong>{{ pdf_name }}</strong>
         </p>
 
         <p>
-            PDF uploaded successfully. You can now ask multiple questions.
+            Your document is ready. Ask a question below.
         </p>
 
-    {% endif %}
+        <form action="/upload" method="POST" enctype="multipart/form-data">
+
+            <input
+                type="file"
+                name="pdf"
+                accept=".pdf"
+                required
+            >
+
+            <button type="submit">
+                📄 Upload New PDF
+            </button>
+
+        </form>
+
+    </div>
 
 
-    {% if message %}
+    <!-- Question -->
 
-        <p>
-            <strong>{{ message }}</strong>
-        </p>
+    <div class="card">
 
-    {% endif %}
-
-
-    <hr>
-
-
-    <!-- Ask Question -->
-
-    {% if pdf_uploaded %}
-
-        <h2>Ask a Question</h2>
+        <h2>💬 Ask a Question</h2>
 
         <form action="/ask" method="POST">
 
             <input
                 type="text"
                 name="question"
-                placeholder="Ask your question..."
+                placeholder="Example: What are the major risk factors for diabetes?"
                 value="{{ question if question else '' }}"
                 required
             >
 
             <button type="submit">
-                Ask
+                Ask AI
             </button>
 
         </form>
 
-
-        <!-- Answer -->
-
-        {% if question %}
-
-            <hr>
-
-            <h3>Question:</h3>
-
-            <p>
-                {{ question }}
-            </p>
+    </div>
 
 
-            <h3>Answer:</h3>
-
-            <p style="white-space: pre-line;">
-                {{ answer }}
-            </p>
+    {% if question %}
 
 
-            <!-- Sources -->
+    <!-- Question -->
 
-            {% if source_pages %}
+    <div class="card">
 
-                <h3>Source Pages:</h3>
+        <h2>❓ Your Question</h2>
 
-                <ul>
+        <div class="question">
 
-                    {% for page in source_pages %}
+            {{ question }}
 
-                        <li>
-                            Page {{ page }}
-                        </li>
+        </div>
 
-                    {% endfor %}
-
-                </ul>
-
-            {% endif %}
+    </div>
 
 
-            <br>
+    <!-- Answer -->
 
-            <form action="/" method="GET">
+    <div class="card">
 
-                <button type="submit">
-                    New Question
-                </button>
+        <h2>🤖 AI Answer</h2>
 
-            </form>
+        <div class="answer">
 
-        {% endif %}
+            {{ answer | replace('\n', '<br>') | safe }}
+
+        </div>
+
+    </div>
+
+
+    <!-- Sources -->
+
+    {% if source_pages %}
+
+    <div class="card sources">
+
+        <h2>📖 Source Pages</h2>
+
+        <p>
+            The answer was generated using information retrieved
+            from these pages:
+        </p>
+
+        {% for page in source_pages %}
+
+        <span>
+            Page {{ page }}
+        </span>
+
+        {% endfor %}
+
+    </div>
 
     {% endif %}
 
 
-    <hr>
+    <!-- Retrieved Information -->
+
+    {% if retrieved_context %}
+
+    <div class="card">
+
+        <h2>🔎 Retrieved Information</h2>
+
+        <p>
+            The following information was retrieved from the uploaded
+            document and provided to the AI as context.
+        </p>
+
+        <div class="retrieved">
+
+            {{ retrieved_context | replace('\n', '<br>') | safe }}
+
+        </div>
+
+    </div>
+
+    {% endif %}
+
+
+    {% endif %}
+
+    {% endif %}
 
 
     <!-- Disclaimer -->
 
-    <p>
+    <div class="disclaimer">
 
-        <strong>Disclaimer:</strong>
+        <strong>Medical Disclaimer:</strong>
 
-        This application provides information from the uploaded document
-        and is not a substitute for professional medical advice.
+        This application is for educational and informational purposes only.
+        It is not a substitute for professional medical advice,
+        diagnosis, or treatment.
 
-    </p>
+    </div>
+
+</div>
 
 </body>
 

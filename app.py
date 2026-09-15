@@ -1,5 +1,9 @@
 from flask import Flask, render_template, request
-from rag.rag_pipeline import answer_question
+from rag.pdf_loader import extract_text_from_pdf
+from rag.chunker import create_chunks
+from rag.embeddings import create_embeddings
+from rag.vector_store import create_vector_store, search_vector_store
+from rag.llm import generate_answer
 import os
 
 app = Flask(__name__)
@@ -12,9 +16,14 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 # Store the currently selected PDF
 current_pdf = None
 
+# Store processed RAG data
+chunks = None
+index = None
+
 
 @app.route("/")
 def home():
+
     return render_template(
         "index.html",
         pdf_uploaded=current_pdf is not None,
@@ -24,7 +33,8 @@ def home():
 
 @app.route("/upload", methods=["POST"])
 def upload():
-    global current_pdf
+
+    global current_pdf, chunks, index
 
     pdf = request.files.get("pdf")
 
@@ -47,12 +57,33 @@ def upload():
 
     pdf.save(file_path)
 
-    # Remember the uploaded PDF
     current_pdf = file_path
+
+    # -----------------------------
+    # Process PDF only once
+    # -----------------------------
+
+    print("Processing PDF...")
+
+    pages = extract_text_from_pdf(current_pdf)
+
+    print("Creating chunks...")
+
+    chunks = create_chunks(pages)
+
+    print("Creating embeddings...")
+
+    embeddings = create_embeddings(chunks)
+
+    print("Creating FAISS vector store...")
+
+    index = create_vector_store(embeddings)
+
+    print("PDF processing completed.")
 
     return render_template(
         "index.html",
-        message=f"PDF uploaded successfully: {pdf.filename}",
+        message=f"PDF uploaded and processed successfully: {pdf.filename}",
         pdf_uploaded=True,
         pdf_name=pdf.filename
     )
@@ -61,7 +92,8 @@ def upload():
 @app.route("/ask", methods=["POST"])
 def ask():
 
-    if not current_pdf:
+    if not current_pdf or chunks is None or index is None:
+
         return render_template(
             "index.html",
             message="Please upload a PDF first."
@@ -70,6 +102,7 @@ def ask():
     question = request.form.get("question")
 
     if not question:
+
         return render_template(
             "index.html",
             message="Please enter a question.",
@@ -77,20 +110,75 @@ def ask():
             pdf_name=os.path.basename(current_pdf)
         )
 
-    answer, source_pages = answer_question(
+    # -----------------------------
+    # Create embedding for question
+    # -----------------------------
+
+    query_embedding = create_embeddings([
+        {"text": question}
+    ])
+
+    # -----------------------------
+    # Search FAISS
+    # -----------------------------
+
+    distances, indices = search_vector_store(
+        index,
+        query_embedding,
+        top_k=8
+    )
+
+    # -----------------------------
+    # Build context
+    # -----------------------------
+
+    context = ""
+
+    source_pages = []
+
+    for index_number in indices[0]:
+
+        page_number = chunks[index_number]["page"]
+
+        chunk_text = chunks[index_number]["text"]
+
+        # Skip reference pages
+        if page_number >= 80:
+            continue
+
+        context += (
+            f"Page {page_number}:\n"
+            f"{chunk_text}\n\n"
+        )
+
+        if page_number not in source_pages:
+
+            source_pages.append(page_number)
+
+        if len(source_pages) >= 5:
+
+            break
+
+    # -----------------------------
+    # Generate answer
+    # -----------------------------
+
+    answer = generate_answer(
         question,
-        current_pdf
+        context
     )
 
     return render_template(
-        "index.html",
-        question=question,
-        answer=answer,
-        source_pages=source_pages,
-        pdf_uploaded=True,
-        pdf_name=os.path.basename(current_pdf)
-    )
+       "index.html",
+      question=question,
+      answer=answer,
+      source_pages=source_pages,
+      retrieved_context=context,
+      pdf_uploaded=True,
+      pdf_name=os.path.basename(current_pdf)
+    ) 
 
 
 if __name__ == "__main__":
+
     app.run(debug=True)
