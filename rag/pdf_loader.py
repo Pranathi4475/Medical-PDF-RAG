@@ -1,11 +1,12 @@
-import fitz
+import pymupdf
 
 def extract_text_from_pdf(pdf_path):
-    document = fitz.open(pdf_path)
+    document = pymupdf.open(pdf_path)
 
     pages = []
 
     for page_number, page in enumerate(document):
+
         text = page.get_text()
 
         pages.append({
